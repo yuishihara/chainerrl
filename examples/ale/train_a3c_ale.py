@@ -17,6 +17,7 @@ from chainerrl.experiments.evaluator import eval_performance
 from chainerrl.experiments.prepare_output_dir import prepare_output_dir
 from chainerrl.experiments.train_agent_async import train_agent_async
 from chainerrl.links import dqn_head
+from chainerrl.misc import env_modifiers
 from chainerrl.misc.init_like_torch import init_like_torch
 from chainerrl.misc import random_seed
 from chainerrl.optimizers.nonbias_weight_decay import NonbiasWeightDecay
