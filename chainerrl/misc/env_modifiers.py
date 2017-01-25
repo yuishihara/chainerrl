@@ -6,6 +6,8 @@ from future import standard_library
 from builtins import *  # NOQA
 standard_library.install_aliases()
 
+import numpy as np
+
 
 def make_rendered(env, *render_args, **render_kwargs):
     base_step = env.step
@@ -62,6 +64,31 @@ def make_reward_filtered(env, reward_filter):
         return observation, reward, done, info
 
     env.step = step
+
+
+def scale_rewards(env, scale):
+    """Scale rewards."""
+    make_reward_filtered(env, lambda r: r * scale)
+
+
+def clip_rewards(env, low, high):
+    """Clip rewards."""
+    make_reward_filtered(env, lambda r: np.clip(r, low, high))
+
+
+def center_rewards(env, average_reward_decay=0.999):
+    """Center rewards so that their mean will be zero.
+
+    This is intended for maximizing average rewards.
+    """
+    average_reward = [0]
+
+    def reward_filter(r):
+        average_reward[0] += ((1 - average_reward_decay) *
+                              (r - average_reward[0]))
+        return r - average_reward
+
+    make_reward_filtered(env, reward_filter)
 
 
 def make_action_repeated(env, n_times):

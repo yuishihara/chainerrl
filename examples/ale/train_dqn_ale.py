@@ -27,6 +27,7 @@ from chainerrl.links.dueling_dqn import DuelingDQN
 from chainerrl.links import sequence
 from chainerrl.misc.init_like_torch import init_like_torch
 from chainerrl.misc import random_seed
+from chainerrl.misc import env_modifiers
 from chainerrl import replay_buffer
 
 from dqn_phi import dqn_phi
@@ -101,6 +102,8 @@ def main():
         random_seed.set_random_seed(args.seed)
 
     env = ale.ALE(args.rom, use_sdl=args.use_sdl)
+    # Clip rewards so that they are in [-1, 1]
+    env_modifiers.clip_rewards(env, low=-1, high=1)
     eval_env = ale.ALE(args.rom, use_sdl=args.use_sdl,
                        treat_life_lost_as_terminal=False)
 

@@ -117,7 +117,7 @@ class DQN(agent.Agent):
                  explorer, gpu=-1, replay_start_size=50000,
                  minibatch_size=32, update_frequency=1,
                  target_update_frequency=10000, clip_delta=True,
-                 clip_reward=True, phi=lambda x: x,
+                 phi=lambda x: x,
                  target_update_method='hard',
                  soft_update_tau=1e-2, async_update=False,
                  n_times_update=1, average_q_decay=0.999,
@@ -149,7 +149,6 @@ class DQN(agent.Agent):
         self.update_frequency = update_frequency
         self.target_update_frequency = target_update_frequency
         self.clip_delta = clip_delta
-        self.clip_reward = clip_reward
         self.phi = phi
         self.target_update_method = target_update_method
         self.soft_update_tau = soft_update_tau
@@ -391,9 +390,6 @@ class DQN(agent.Agent):
             self.update_future.result()
             self.update_future = None
 
-        if self.clip_reward:
-            reward = np.clip(reward, -1, 1)
-
         greedy_action = self.act(state)
         action = self.explorer.select_action(self.t, lambda: greedy_action)
         self.t += 1
@@ -425,9 +421,6 @@ class DQN(agent.Agent):
 
         This function must be called once when an episode terminates.
         """
-
-        if self.clip_reward:
-            reward = np.clip(reward, -1, 1)
 
         assert self.last_state is not None
         assert self.last_action is not None
