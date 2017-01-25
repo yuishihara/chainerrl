@@ -24,6 +24,7 @@ from chainerrl.explorers.epsilon_greedy import ConstantEpsilonGreedy
 from chainerrl.explorers.epsilon_greedy import LinearDecayEpsilonGreedy
 from chainerrl.links import dqn_head
 from chainerrl.links import sequence
+from chainerrl.misc import env_modifiers
 from chainerrl.misc import random_seed
 from chainerrl.optimizers import rmsprop_async
 from chainerrl import spaces
@@ -63,8 +64,12 @@ def main():
     print('Output files are saved in {}'.format(args.outdir))
 
     def make_env(process_idx, test):
-        return ale.ALE(args.rom, use_sdl=args.use_sdl,
-                       treat_life_lost_as_terminal=not test)
+        env = ale.ALE(args.rom, use_sdl=args.use_sdl,
+                      treat_life_lost_as_terminal=not test)
+        if not test:
+            env_modifiers.clip_rewards(env, low=-1, high=1)
+
+        return env
 
     sample_env = make_env(0, test=False)
     action_space = sample_env.action_space

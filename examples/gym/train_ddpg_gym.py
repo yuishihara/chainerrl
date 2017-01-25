@@ -65,17 +65,15 @@ def main():
             a = cuda.to_cpu(a)
         return np.clip(a, action_space.low, action_space.high)
 
-    def reward_filter(r):
-        return r * args.reward_scale_factor
-
-    def make_env():
+    def make_env(for_eval):
         env = gym.make(args.env)
         # env.monitor.start('/tmp', force=True, seed=0)
         timestep_limit = env.spec.timestep_limit
         env_modifiers.make_timestep_limited(env, timestep_limit)
         if isinstance(env.action_space, spaces.Box):
             env_modifiers.make_action_filtered(env, clip_action_filter)
-        env_modifiers.make_reward_filtered(env, reward_filter)
+        if not for_eval:
+            env_modifiers.scale_rewards(env, args.reward_scale_factor)
         if args.render:
             env_modifiers.make_rendered(env)
 
@@ -84,7 +82,8 @@ def main():
         env.__exit__ = __exit__
         return env
 
-    env = make_env()
+    env = make_env(for_eval=False)
+    eval_env = make_env(for_eval=True)
     # timestep_limit = sample_env.spec.timestep_limit
     obs_size = np.asarray(env.observation_space.shape).prod()
     action_space = env.action_space
@@ -137,7 +136,7 @@ def main():
 
     if args.demo:
         mean, median, stdev = eval_performance(
-            env=env,
+            env=eval_env,
             agent=agent,
             n_runs=args.eval_n_runs)
         print('n_runs: {} mean: {} median: {} stdev'.format(
@@ -146,7 +145,8 @@ def main():
         train_agent_with_evaluation(
             agent=agent, env=env, steps=args.steps,
             eval_n_runs=args.eval_n_runs, eval_frequency=args.eval_frequency,
-            outdir=args.outdir)
+            outdir=args.outdir,
+            eval_env=eval_env)
 
 if __name__ == '__main__':
     main()

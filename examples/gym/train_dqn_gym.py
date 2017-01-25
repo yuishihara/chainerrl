@@ -77,11 +77,7 @@ def main():
         if isinstance(env.action_space, spaces.Box):
             env_modifiers.make_action_filtered(env, clip_action_filter)
         if not for_eval:
-            env_modifiers.make_reward_filtered(
-                env, lambda x: x * args.reward_scale_factor)
-            # env_modifiers.make_reward_filtered(env, AverageRewardFilter())
-            # env_modifiers.make_reward_filtered(
-            #     env, reward_filter.NormalizedRewardFilter(scale=0.01))
+            env_modifiers.scale_rewards(env, args.reward_scale_factor)
         if ((args.render_eval and for_eval) or
                 (args.render_train and not for_eval)):
             env_modifiers.make_rendered(env)

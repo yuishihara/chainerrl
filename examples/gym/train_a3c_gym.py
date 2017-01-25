@@ -122,8 +122,7 @@ def main():
         env = gym.make(args.env)
         # Scale rewards observed by agents
         if not test:
-            env_modifiers.make_reward_filtered(
-                env, lambda x: x * args.reward_scale_factor)
+            env_modifiers.scale_rewards(env, args.reward_scale_factor)
         if args.render and process_idx == 0 and not test:
             env_modifiers.make_rendered(env)
         return env
