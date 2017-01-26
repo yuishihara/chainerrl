@@ -103,7 +103,6 @@ class A3C(agent.AsyncAgent):
                  pi_loss_coef=1.0, v_loss_coef=0.5,
                  keep_loss_scale_same=False,
                  normalize_grad_by_t_max=False,
-                 use_average_reward=False, average_reward_tau=1e-2,
                  act_deterministically=False,
                  average_entropy_decay=0.999,
                  average_value_decay=0.999):
@@ -126,8 +125,6 @@ class A3C(agent.AsyncAgent):
         self.v_loss_coef = v_loss_coef
         self.keep_loss_scale_same = keep_loss_scale_same
         self.normalize_grad_by_t_max = normalize_grad_by_t_max
-        self.use_average_reward = use_average_reward
-        self.average_reward_tau = average_reward_tau
         self.act_deterministically = act_deterministically
         self.average_value_decay = average_value_decay
         self.average_entropy_decay = average_entropy_decay
@@ -139,7 +136,6 @@ class A3C(agent.AsyncAgent):
         self.past_states = {}
         self.past_rewards = {}
         self.past_values = {}
-        self.average_reward = 0
         # A3C won't use a explorer, but this arrtibute is referenced by run_dqn
         self.explorer = None
 
@@ -170,16 +166,11 @@ class A3C(agent.AsyncAgent):
         for i in reversed(range(self.t_start, self.t)):
             R *= self.gamma
             R += self.past_rewards[i]
-            if self.use_average_reward:
-                R -= self.average_reward
             v = self.past_values[i]
             if self.process_idx == 0:
                 logger.debug('t:%s s:%s v:%s R:%s',
                              i, self.past_states[i].data.sum(), v.data, R)
             advantage = R - v
-            if self.use_average_reward:
-                self.average_reward += self.average_reward_tau * \
-                    float(advantage.data)
             # Accumulate gradients of policy
             log_prob = self.past_action_log_prob[i]
             entropy = self.past_action_entropy[i]
