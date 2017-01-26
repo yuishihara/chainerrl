@@ -87,13 +87,18 @@ class A3C(agent.AsyncAgent):
         t_max (int): The model is updated after every t_max local steps
         gamma (float): Discount factor [0,1]
         beta (float): Weight coefficient for the entropy regularizaiton term.
-        process_idx (int): Index of the process.
         phi (callable): Feature extractor function
         pi_loss_coef (float): Weight coefficient for the loss of the policy
         v_loss_coef (float): Weight coefficient for the loss of the value
             function
+        normalize_loss_by_steps (bool): If set true, losses are normalized by
+            the number of steps taken to accumulate the losses
         act_deterministically (bool): If set true, choose most probable actions
             in act method.
+        average_entropy_decay (float): Decay rate of average entropy. Used only
+            to record statistics.
+        average_value_decay (float): Decay rate of average value. Used only
+            to record statistics.
     """
 
     process_idx = None
@@ -101,8 +106,7 @@ class A3C(agent.AsyncAgent):
     def __init__(self, model, optimizer, t_max, gamma, beta=1e-2,
                  process_idx=0, phi=lambda x: x,
                  pi_loss_coef=1.0, v_loss_coef=0.5,
-                 keep_loss_scale_same=False,
-                 normalize_grad_by_t_max=False,
+                 normalize_loss_by_steps=True,
                  act_deterministically=False,
                  average_entropy_decay=0.999,
                  average_value_decay=0.999):
@@ -123,8 +127,7 @@ class A3C(agent.AsyncAgent):
         self.phi = phi
         self.pi_loss_coef = pi_loss_coef
         self.v_loss_coef = v_loss_coef
-        self.keep_loss_scale_same = keep_loss_scale_same
-        self.normalize_grad_by_t_max = normalize_grad_by_t_max
+        self.normalize_loss_by_steps = normalize_loss_by_steps
         self.act_deterministically = act_deterministically
         self.average_value_decay = average_value_decay
         self.average_entropy_decay = average_entropy_decay
@@ -180,23 +183,12 @@ class A3C(agent.AsyncAgent):
             # Entropy is maximized
             pi_loss -= self.beta * entropy
             # Accumulate gradients of value function
-
             v_loss += (v - R) ** 2 / 2
 
-        if self.pi_loss_coef != 1.0:
-            pi_loss *= self.pi_loss_coef
+        pi_loss *= self.pi_loss_coef
+        v_loss *= self.v_loss_coef
 
-        if self.v_loss_coef != 1.0:
-            v_loss *= self.v_loss_coef
-
-        # Normalize the loss of sequences truncated by terminal states
-        if self.keep_loss_scale_same and \
-                self.t - self.t_start < self.t_max:
-            factor = self.t_max / (self.t - self.t_start)
-            pi_loss *= factor
-            v_loss *= factor
-
-        if self.normalize_grad_by_t_max:
+        if self.normalize_loss_by_steps:
             pi_loss /= self.t - self.t_start
             v_loss /= self.t - self.t_start
 

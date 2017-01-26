@@ -38,6 +38,8 @@ class NSQ(AsyncAgent):
             global steps
         explorer (Explorer): Explorer to use in training
         phi (callable): Feature extractor function
+        normalize_loss_by_steps (bool): If set true, losses are normalized by
+            the number of steps taken to accumulate the losses
         average_q_decay (float): Decay rate of average Q, only used for
             recording statistics
     """
@@ -46,6 +48,7 @@ class NSQ(AsyncAgent):
 
     def __init__(self, q_function, optimizer,
                  t_max, gamma, i_target, explorer, phi=lambda x: x,
+                 normalize_loss_by_steps=True,
                  average_q_decay=0.999, logger=getLogger(__name__)):
 
         self.shared_q_function = q_function
@@ -63,6 +66,7 @@ class NSQ(AsyncAgent):
         self.phi = phi
         self.logger = logger
         self.average_q_decay = average_q_decay
+        self.normalize_loss_by_steps = normalize_loss_by_steps
 
         self.t_global = mp.Value('l', 0)
         self.t = 0
@@ -101,12 +105,8 @@ class NSQ(AsyncAgent):
                 q, chainer.Variable(np.asarray([[R]], dtype=np.float32)),
                 delta=1.0))
 
-        # Do we need to normalize losses by (self.t - self.t_start)?
-        # Otherwise, loss scales can be different in case of self.t_max
-        # and in case of termination.
-
-        # I'm not sure but if we need to normalize losses...
-        # loss /= self.t - self.t_start
+        if self.normalize_loss_by_steps:
+            loss /= self.t - self.t_start
 
         # Compute gradients using thread-specific model
         self.q_function.zerograds()
