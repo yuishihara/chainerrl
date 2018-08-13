@@ -365,6 +365,8 @@ class DQN(agent.AttributeSavingMixin, agent.Agent):
         self.average_q += (1 - self.average_q_decay) * q
 
         self.logger.debug('t:%s q:%s action_value:%s', self.t, q, action_value)
+        self.last_state = obs
+        self.last_action = action
         return action
 
     def act_and_train(self, obs, reward):

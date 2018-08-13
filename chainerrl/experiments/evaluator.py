@@ -31,7 +31,7 @@ _basic_columns = ('steps', 'episodes', 'elapsed', 'mean',
 
 
 def run_evaluation_episodes(env, agent, n_runs, max_episode_len=None,
-                            explorer=None, logger=None):
+                            explorer=None, logger=None, step_hooks=[]):
     """Run multiple evaluation episodes and return returns.
 
     Args:
@@ -65,6 +65,8 @@ def run_evaluation_episodes(env, agent, n_runs, max_episode_len=None,
             obs, r, done, info = env.step(a)
             test_r += r
             t += 1
+            for hook in step_hooks:
+                hook(env, agent, t) 
         agent.stop_episode()
         # As mixing float and numpy float causes errors in statistics
         # functions, here every score is cast to float.
@@ -74,7 +76,7 @@ def run_evaluation_episodes(env, agent, n_runs, max_episode_len=None,
 
 
 def eval_performance(env, agent, n_runs, max_episode_len=None,
-                     explorer=None, logger=None):
+                     explorer=None, logger=None, step_hooks=[]):
     """Run multiple evaluation episodes and return statistics.
 
     Args:
@@ -95,7 +97,8 @@ def eval_performance(env, agent, n_runs, max_episode_len=None,
         env, agent, n_runs,
         max_episode_len=max_episode_len,
         explorer=explorer,
-        logger=logger)
+        logger=logger,
+        step_hooks=step_hooks)
     stats = dict(
         mean=statistics.mean(scores),
         median=statistics.median(scores),
