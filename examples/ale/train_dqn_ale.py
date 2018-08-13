@@ -27,6 +27,7 @@ from chainerrl import replay_buffer
 
 import atari_wrappers
 
+from extensions import hooks
 
 def parse_activation(activation_str):
     if activation_str == 'relu':
@@ -82,11 +83,12 @@ def main():
     parser.add_argument('--noisy-net-sigma', type=float, default=None)
     parser.add_argument('--arch', type=str, default='nature',
                         choices=['nature', 'nips', 'dueling'])
-    parser.add_argument('--steps', type=int, default=10 ** 7)
+    parser.add_argument('--steps', type=int, default=5 * 10 ** 7)
     parser.add_argument('--max-episode-len', type=int,
                         default=5 * 60 * 60 // 4,  # 5 minutes with 60/4 fps
                         help='Maximum number of steps for each episode.')
     parser.add_argument('--replay-start-size', type=int, default=5 * 10 ** 4)
+    parser.add_argument('--replay-memory-size', type=int, default=10 ** 6)
     parser.add_argument('--target-update-interval',
                         type=int, default=10 ** 4)
     parser.add_argument('--eval-interval', type=int, default=10 ** 5)
@@ -120,13 +122,17 @@ def main():
     args.outdir = experiments.prepare_output_dir(args, args.outdir)
     print('Output files are saved in {}'.format(args.outdir))
 
+    # Additional hook to save internal state
+    step_hooks = [hooks.SaveStateHook(data_size=10**4)]
+
     def make_env(test):
         # Use different random seeds for train and test envs
         env_seed = test_seed if test else train_seed
         env = atari_wrappers.wrap_deepmind(
             atari_wrappers.make_atari(args.env),
             episode_life=not test,
-            clip_rewards=not test)
+            clip_rewards=not test,
+            step_hooks=step_hooks)
         env.seed(int(env_seed))
         if args.monitor:
             env = gym.wrappers.Monitor(
@@ -159,7 +165,7 @@ def main():
 
     opt.setup(q_func)
 
-    rbuf = replay_buffer.ReplayBuffer(10 ** 6)
+    rbuf = replay_buffer.ReplayBuffer(args.replay_memory_size)
 
     explorer = explorers.LinearDecayEpsilonGreedy(
         1.0, args.final_epsilon,
@@ -186,7 +192,8 @@ def main():
         eval_stats = experiments.eval_performance(
             env=eval_env,
             agent=agent,
-            n_runs=args.eval_n_runs)
+            n_runs=args.eval_n_runs,
+            step_hooks=step_hooks)
         print('n_runs: {} mean: {} median: {} stdev {}'.format(
             args.eval_n_runs, eval_stats['mean'], eval_stats['median'],
             eval_stats['stdev']))
@@ -198,9 +205,10 @@ def main():
             agent=agent, env=env, steps=args.steps,
             eval_n_runs=args.eval_n_runs, eval_interval=args.eval_interval,
             outdir=args.outdir, eval_explorer=eval_explorer,
-            save_best_so_far_agent=False,
+            save_best_so_far_agent=True,
             max_episode_len=args.max_episode_len,
             eval_env=eval_env,
+            step_hooks=step_hooks,
         )
 
 
