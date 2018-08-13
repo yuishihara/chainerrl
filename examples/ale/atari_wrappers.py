@@ -168,6 +168,17 @@ class WarpFrame(gym.ObservationWrapper):
         return frame.reshape(self.observation_space.low.shape)
 
 
+class HookFrame(gym.ObservationWrapper):
+    def __init__(self, env, step_hooks=[]):
+        gym.ObservationWrapper.__init__(self, env)
+        self.hooks = step_hooks
+
+    def _observation(self, frame):
+        for hook in self.hooks:
+            hook.raw_frame(frame)
+        return frame
+
+
 class FrameStack(gym.Wrapper):
     def __init__(self, env, k, channel_order='hwc'):
         """Stack k last frames.
@@ -261,12 +272,14 @@ def make_atari(env_id):
 
 def wrap_deepmind(env, episode_life=True, clip_rewards=True,
                   frame_stack=True, scale=False, fire_reset=False,
-                  channel_order='chw'):
+                  channel_order='chw',
+                  step_hooks=[]):
     """Configure environment for DeepMind-style Atari."""
     if episode_life:
         env = EpisodicLifeEnv(env)
     if fire_reset and 'FIRE' in env.unwrapped.get_action_meanings():
         env = FireResetEnv(env)
+    env = HookFrame(env, step_hooks=step_hooks)
     env = WarpFrame(env, channel_order=channel_order)
     if scale:
         env = ScaledFloatFrame(env)
