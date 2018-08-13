@@ -1,4 +1,4 @@
-import data
+from . import data
 import matplotlib.pyplot as plt
 import matplotlib.animation as pltanim
 
