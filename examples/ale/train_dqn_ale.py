@@ -189,10 +189,12 @@ def main():
         agent.load(args.load)
 
     if args.demo:
+        eval_explorer = explorers.ConstantEpsilonGreedy(args.eval_epsilon, lambda: np.random.randint(n_actions))
         eval_stats = experiments.eval_performance(
             env=eval_env,
             agent=agent,
             n_runs=args.eval_n_runs,
+            explorer=eval_explorer,
             step_hooks=step_hooks)
         print('n_runs: {} mean: {} median: {} stdev {}'.format(
             args.eval_n_runs, eval_stats['mean'], eval_stats['median'],
