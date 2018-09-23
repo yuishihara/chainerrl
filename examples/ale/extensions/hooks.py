@@ -22,7 +22,7 @@ class SaveStateHook(ExtendedStepHook):
 
     def __call__(self, monitor, agent, step):
         last_state = agent.last_state
-        if self.raw_frame is not None:
+        if self.last_raw_frame is not None:
             last_frame = self.last_raw_frame
         else:
             last_frame = last_state[3]

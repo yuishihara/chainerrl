@@ -63,6 +63,7 @@ def run_evaluation_episodes(env, agent, n_runs, max_episode_len=None,
             else:
                 a = greedy_action_func()
             obs, r, done, info = env.step(a)
+            agent.last_action = a
             test_r += r
             t += 1
             for hook in step_hooks:
